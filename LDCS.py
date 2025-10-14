@@ -9,21 +9,21 @@ from LDCS_utils import dcs
 import cv2
 
 # Load image
-img_path = r"C:\Users\bened\Desktop\temp\46_01.png"
+img_path = r"C:\Users\bened\Desktop\temp\Bobby_Kangaroo_3.JPG"
 
 img = cv2.imread(img_path, cv2.IMREAD_UNCHANGED)
 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)  # Convert BGR to RGB
 
 local = dcs(
     img, 
-    glob=False, 
-    col_space="YWE", 
+    glob=False,  
     window_size_factor=32, 
-    stride_factor=4
+    stride_factor=4,
+    downscale_fact=4
     )
 
 # Display results
-fig, axes = plt.subplots(1, 2, figsize=(20, 5))
+_, axes = plt.subplots(1, 2, figsize=(20, 5))
 
 cv2.imwrite("l_dcs.jpg", cv2.cvtColor(local, cv2.COLOR_RGB2BGR))
 
