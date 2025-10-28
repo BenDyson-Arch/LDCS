@@ -8,7 +8,6 @@ import numpy as np
 import concurrent.futures
 from tqdm import tqdm
 import threading
-from scipy.ndimage import uniform_filter
 
 def stretch_channel(image_channel, stretch_factor):
     """
@@ -111,18 +110,14 @@ def process_patch(img: np.ndarray, row: int, col: int, window: int, d: int):
     Process one window patch: apply decorrelation with no re-conversion
     and return (row, col, stretched_patch, weight_map).
     """
-    tl = _thread_local
-    if not hasattr(tl, 'scratch'):
-        tl.scratch = np.empty((window, window, d), dtype=np.float32)
-        tl.weight  = np.ones((window, window),    dtype=np.float32)
-
     patch = img[row:row+window, col:col+window]
 
-    # Decorrelate-stretch in-place on scratch buffer
+    # Decorrelate-stretch
     stretched = global_dcs(patch, is_global=False).astype(np.float32)
 
-    np.copyto(tl.scratch, stretched)
-    return row, col, tl.scratch, tl.weight
+    weight = np.ones((window, window), dtype=np.float32)
+
+    return row, col, stretched, weight
 
 
 def local_dcs(img: np.ndarray, window_size_factor: int = 8, stride_factor: int = 2) -> np.ndarray:
@@ -142,7 +137,7 @@ def local_dcs(img: np.ndarray, window_size_factor: int = 8, stride_factor: int =
     # Avoid areas not being covered by windows when orig_w is not divisible by window
     pad_x = stride
 
-    padded = cv2.copyMakeBorder(img, 0, pad_y, 0, pad_x, cv2.BORDER_REFLECT)    
+    padded = cv2.copyMakeBorder(img, 0, pad_y, 0, pad_x, cv2.BORDER_REFLECT)
 
     cs = cv2.cvtColor(padded, cv2.COLOR_RGB2LAB)
     h, w, d = cs.shape
@@ -155,17 +150,21 @@ def local_dcs(img: np.ndarray, window_size_factor: int = 8, stride_factor: int =
     coords = [(r, c) for r in range(0, h - window + 1, stride)
                   for c in range(0, w - window + 1, stride)
                   if r + window <= h and c + window <= w]
-
-    with concurrent.futures.ThreadPoolExecutor() as executor:
+    
+    with concurrent.futures.ProcessPoolExecutor() as executor:
         futures = [
             executor.submit(process_patch, cs, r, c, window, d)
             for r, c in coords
         ]
 
-        for fut in tqdm(concurrent.futures.as_completed(futures), total=len(futures), desc="Merging patches"):
-            rr, cc, patch, wmap = fut.result()
-            output[rr:rr+window, cc:cc+window] += patch
-            weight_map[rr:rr+window, cc:cc+window] += wmap
+        results = []
+        for fut in tqdm(concurrent.futures.as_completed(futures), total=len(futures), desc="Processing patches"):
+            results.append(fut.result())
+
+    # Accumulate after all processing
+    for rr, cc, patch, wmap in results:
+        output[rr:rr+window, cc:cc+window] += patch
+        weight_map[rr:rr+window, cc:cc+window] += wmap
 
     # Normalize and convert back to RGB
     weight_map[weight_map == 0] = 1
@@ -185,7 +184,7 @@ def local_dcs(img: np.ndarray, window_size_factor: int = 8, stride_factor: int =
 
 
 
-def dcs(image: np.ndarray, glob: bool = True, window_size_factor: int = 8, stride_factor:int = 2, downscale_fact:float = None):
+def dcs(image: np.ndarray, glob: bool = True, window_size_factor: int = 8, stride_factor:int = 2, downscale_fact:float = 0.0):
     """
     Perform decorrelation stretch on the input image.
     
@@ -207,7 +206,7 @@ def dcs(image: np.ndarray, glob: bool = True, window_size_factor: int = 8, strid
     """
 
     # Downscale image
-    if downscale_fact:
+    if downscale_fact > 0.0:
         image = cv2.resize(image, (0,0), fx=1/downscale_fact, fy=1/downscale_fact)
         print(f"Downscaled image to {image.shape[1]}x{image.shape[0]} for processing")
 
@@ -237,7 +236,10 @@ def plot_channels(array):
     array_dim = array.shape[2]
     
     _, axes = plt.subplots(1, array_dim, figsize=((array_dim * 5), 5))
-
+    
+    # Ensure axes is always an array for indexing
+    axes = np.array(axes).flatten()
+    
     for i in range(array_dim):
         axes[i].imshow(array[..., i], cmap='gray')
         axes[i].set_title(f'Channel {i+1}')
@@ -252,6 +254,9 @@ def plot_channel_histograms(array):
     array_dim = array.shape[2]
     
     _, axes = plt.subplots(1, array_dim, figsize=((array_dim * 5), 5))
+    
+    # Ensure axes is always an array for indexing
+    axes = np.array(axes).flatten()
 
     for i in range(array_dim):
         axes[i].hist(array[..., i].ravel(), bins=256, color='gray', alpha=0.7)
