@@ -7,7 +7,6 @@ import cv2
 import numpy as np
 import concurrent.futures
 from tqdm import tqdm
-import threading
 
 def stretch_channel(image_channel, stretch_factor):
     """
@@ -37,29 +36,7 @@ def stretch_channel(image_channel, stretch_factor):
         )
     return stretched_channel
 
-def rotate_hue_to_fill(h):
-    """
-    Given a 2D array of hues in [0,360), find the largest empty gap
-    in the circular histogram and rotate all hues so that this gap
-    straddles the 360°→0° boundary.
-    """
-    # Flatten and sort
-    hs = np.sort(h.ravel())
-    # Compute consecutive gaps, including wrap‑around from 360→0
-    diffs = np.diff(np.concatenate([hs, hs[:1] + 360.0]))
-    # Index of largest gap
-    idx = np.argmax(diffs)
-    # Start of the gap
-    H_lo = hs[idx] % 360.0
-    # Rotate all hues so H_lo maps to 0
-    h_rot = np.mod(h - H_lo + 360.0, 360.0)
-    return h_rot
-
-
-# Process-local scratch buffers via threading.local (works per process)
-_thread_local = threading.local()
-
-def global_dcs(image: np.ndarray, is_global: bool = True, gamma: bool = True) -> np.ndarray:
+def global_dcs(image: np.ndarray, is_global: bool = True) -> np.ndarray:
     """
     Perform a global decorrelation stretch on `image` in the given colour space,
     using custom stretch factors per channel from factor_dict[col_space].
@@ -105,7 +82,7 @@ def global_dcs(image: np.ndarray, is_global: bool = True, gamma: bool = True) ->
     return cv2.cvtColor(result, cv2.COLOR_LAB2RGB) if is_global else result
 
 
-def process_patch(img: np.ndarray, row: int, col: int, window: int, d: int):
+def process_patch(img: np.ndarray, row: int, col: int, window: int):
     """
     Process one window patch: apply decorrelation with no re-conversion
     and return (row, col, stretched_patch, weight_map).

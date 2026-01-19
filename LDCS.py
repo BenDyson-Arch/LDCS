@@ -1,16 +1,15 @@
 #############################################################################
 # Code developed by Benedict Dyson, affiliation: Griffith University        #
+# Paper DOI:                                                                #
 #############################################################################
 
-import os
 import matplotlib.pyplot as plt
 from LDCS_utils import dcs
 import cv2
 
 if __name__ == '__main__':
     # Load image
-    img_path = 'images/Bobby_Kangaroo_6.JPG'
-    fg_path = 'fg_score.png'
+    img_path = r'your_image_path_here.jpg'  # Replace with your image path
 
     img = cv2.imread(img_path, cv2.IMREAD_UNCHANGED)
     if img is None:
@@ -24,8 +23,8 @@ if __name__ == '__main__':
         glob=False,  
         window_size_factor=8, 
         stride_factor=4,
-        downscale_fact=2
-        )
+        downscale_fact=2.0
+    )
 
     # Display results
     _, axes = plt.subplots(1, 2, figsize=(20, 5))
