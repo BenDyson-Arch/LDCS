@@ -76,7 +76,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 If you use this software in your research, please cite it as follows:
 
 **Plain text:**
-Dyson, B. (2025). LDCS [Computer software]. https://github.com/BenDyson-Arch/LDCS
+Dyson B., Jalandoni A., Taçon P. (2026). Localised decorrelation stretch (L-DCS) for improved visibility of large, dense rock art scenes. Digital Applications in Archaeology and Cultural Heritage. https://doi.org/10.1016/j.daach.2026.e00522
 
 **BibTeX:**
 ```bibtex
