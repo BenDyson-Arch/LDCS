@@ -80,10 +80,10 @@ Dyson, B. (2025). LDCS [Computer software]. https://github.com/BenDyson-Arch/LDC
 
 **BibTeX:**
 ```bibtex
-@software{LDCS,
-  author = {Dyson, Benedict},
-  title = {LDCS},
-  year = {2025},
-  url = {https://github.com/BenDyson-Arch/LDCS}
-}
+@article{DYSON2026e00522,
+  title = {Localised decorrelation stretch (L-DCS) for improved visibility of large, dense rock art scenes},
+  journal = {Digital Applications in Archaeology and Cultural Heritage},
+  year = {2026},
+  doi = {https://doi.org/10.1016/j.daach.2026.e00522},
+  author = {Benedict Dyson and Andrea Jalandoni and Paul Taçon}
 ```
