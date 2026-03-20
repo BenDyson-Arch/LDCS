@@ -130,7 +130,7 @@ def local_dcs(img: np.ndarray, window_size_factor: int = 8, stride_factor: int =
     
     with concurrent.futures.ProcessPoolExecutor() as executor:
         futures = [
-            executor.submit(process_patch, cs, r, c, window, d)
+            executor.submit(process_patch, cs, r, c, window)
             for r, c in coords
         ]
 
